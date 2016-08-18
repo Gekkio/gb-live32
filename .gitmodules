@@ -1,0 +1,6 @@
+[submodule "third-party/m-stack"]
+	path = third-party/m-stack
+	url = https://github.com/Gekkio/m-stack.git
+[submodule "third-party/nelma"]
+	path = third-party/nelma
+	url = git@github.com:Gekkio/nelma.git
