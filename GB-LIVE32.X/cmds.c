@@ -20,6 +20,7 @@ void cmd_ping(size_t payload_size) {
 }
 
 void cmd_gameboy_mode() {
+  low_RSTCTRL();
   __delay_us(1);
   low_GB();
   __delay_us(1);
@@ -28,6 +29,7 @@ void cmd_gameboy_mode() {
 }
 
 void cmd_development_mode() {
+  high_RSTCTRL();
   __delay_us(1);
   high_GB();
   __delay_us(1);
