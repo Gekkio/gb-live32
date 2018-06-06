@@ -1,31 +1,31 @@
 #include <xc.h>
-#include "hardware.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "usb.h"
 
-#include "nelmax.h"
 #include "cmds.h"
+#include "hardware.h"
+#include "nelmax.h"
+#include "usb.h"
+#include "usb_cdc.h"
 
 struct NelmaX NELMAX = {{{0}}};
 
 void clear_sram(uint8_t value) {
   cfg_A0_15_output();
+  cfg_D0_7_output();
+  write_D0_D7(value);
   for (uint8_t addr_h = 0; addr_h < 0x80; addr_h++) {
     write_A8_15(addr_h);
     uint8_t addr_l = 0;
     do {
       write_A0_7(addr_l);
       low_WR();
-      cfg_D0_7_output();
-      write_D0_D7(value);
       high_WR();
-      cfg_D0_7_input();
       addr_l++;
     } while (addr_l != 0);
   }
+  cfg_D0_7_input();
   cfg_A0_15_input();
 }
 
@@ -51,28 +51,27 @@ void main() {
 
         for (size_t i = 0; i < out_buf_len; i++) {
           if (nelmax_read(&NELMAX, out_buf[i], &command, &payload_size)) {
-            if (dispatch_command(command, payload_size)) {
-              size_t response_len = nelmax_encode_response(&NELMAX);
-              const uint8_t *encoded_packet = nelmax_encoded_packet(&NELMAX);
+            nelmax_write(&NELMAX, dispatch_command(command, payload_size));
+            size_t response_len = nelmax_encode_response(&NELMAX);
+            const uint8_t *encoded_packet = nelmax_encoded_packet(&NELMAX);
 
-              size_t offset = 0;
-              size_t chunk_len;
-              while (offset < response_len) {
-                chunk_len = min(response_len - offset, EP_2_LEN);
-                const uint8_t *encoded_chunk = encoded_packet + offset;
-                offset += chunk_len;
+            size_t offset = 0;
+            size_t chunk_len;
+            while (offset < response_len) {
+              chunk_len = min(response_len - offset, EP_2_LEN);
+              const uint8_t *encoded_chunk = encoded_packet + offset;
+              offset += chunk_len;
 
-                while (usb_in_endpoint_busy(2)) {
-                }
-                memcpy(usb_get_in_buffer(2), encoded_chunk, chunk_len);
-                usb_send_in_buffer(2, chunk_len);
+              while (usb_in_endpoint_busy(2)) {
               }
+              memcpy(usb_get_in_buffer(2), encoded_chunk, chunk_len);
+              usb_send_in_buffer(2, chunk_len);
+            }
 
-              if (chunk_len == EP_2_LEN) {
-                while (usb_in_endpoint_busy(2)) {
-                }
-                usb_send_in_buffer(2, 0);
+            if (chunk_len == EP_2_LEN) {
+              while (usb_in_endpoint_busy(2)) {
               }
+              usb_send_in_buffer(2, 0);
             }
           }
         }
@@ -84,4 +83,29 @@ void main() {
 
 void interrupt high_priority isr() {
   usb_service();
+}
+
+int8_t app_unknown_setup_request_callback(const struct setup_packet *setup) {
+  return process_cdc_setup_request(setup);
+}
+
+static struct cdc_line_coding line_coding = {
+  115200,
+  CDC_CHAR_FORMAT_1_STOP_BIT,
+  CDC_PARITY_NONE,
+  8,
+};
+
+int8_t app_set_line_coding_callback(uint8_t, const struct cdc_line_coding *coding) {
+  line_coding = *coding;
+  return 0;
+}
+
+int8_t app_get_line_coding_callback(uint8_t, struct cdc_line_coding *coding) {
+  *coding = line_coding;
+  return 0;
+}
+
+int8_t app_set_control_line_state_callback(uint8_t, bool, bool) {
+  return 0;
 }

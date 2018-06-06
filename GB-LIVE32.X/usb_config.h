@@ -48,12 +48,14 @@
 #define GET_INTERFACE_CALLBACK     app_get_interface_callback
 #define OUT_TRANSACTION_CALLBACK   app_out_transaction_callback
 #define IN_TRANSACTION_COMPLETE_CALLBACK   app_in_transaction_complete_callback
+*/
 #define UNKNOWN_SETUP_REQUEST_CALLBACK app_unknown_setup_request_callback
+/*
 #define UNKNOWN_GET_DESCRIPTOR_CALLBACK app_unknown_get_descriptor_callback
 #define START_OF_FRAME_CALLBACK    app_start_of_frame_callback
 #define USB_RESET_CALLBACK         app_usb_reset_callback
 */
- 
+
 /* CDC Configuration functions. See usb_cdc.h for documentation. */
 /*
 #define CDC_SEND_ENCAPSULATED_COMMAND_CALLBACK app_send_encapsulated_command
@@ -61,10 +63,12 @@
 #define CDC_SET_COMM_FEATURE_CALLBACK app_set_comm_feature_callback
 #define CDC_CLEAR_COMM_FEATURE_CALLBACK app_clear_comm_feature_callback
 #define CDC_GET_COMM_FEATURE_CALLBACK app_get_comm_feature_callback
+*/
 #define CDC_SET_LINE_CODING_CALLBACK app_set_line_coding_callback
 #define CDC_GET_LINE_CODING_CALLBACK app_get_line_coding_callback
 #define CDC_SET_CONTROL_LINE_STATE_CALLBACK app_set_control_line_state_callback
+/*
 #define CDC_SEND_BREAK_CALLBACK app_send_break_callback
 */
- 
+
 #endif /* USB_CONFIG_H__ */

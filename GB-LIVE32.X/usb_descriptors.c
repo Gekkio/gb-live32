@@ -93,7 +93,7 @@ const ROMPTR struct device_descriptor this_device_descriptor =
 	EP_0_LEN, // bMaxPacketSize0
 	0x16C0, // Vendor
 	0x05E1, // Product
-	0x0001, // device release (1.0)
+	0x0002, // device release (2.0)
 	1, // Manufacturer
 	2, // Product
 	5, // Serial
@@ -164,7 +164,7 @@ static const ROMPTR struct configuration_1_packet configuration_1 =
 	CDC_FUNCTIONAL_DESCRIPTOR_SUBTYPE_ACM,
 	/* bmCapabilities: Make sure to keep in sync with the actual
 	 * capabilities (ie: which callbacks are defined). */
-	0,
+	CDC_ACM_CAPABILITY_LINE_CODINGS,
 	},
 
 	/* CDC Union Functional Descriptor */
@@ -242,7 +242,7 @@ static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t la
 static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[23]; } manufacturer_string = {
 	sizeof(manufacturer_string),
 	DESC_STRING,
-	{'h', 't', 't', 'p', ':', '/', '/', 'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i',}
+	{'h', 't', 't', 'p', 's', ':', '/', '/', 'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i',}
 };
 
 static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[12]; } product_string = {

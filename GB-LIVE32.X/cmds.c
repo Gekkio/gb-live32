@@ -1,45 +1,83 @@
 #include <xc.h>
-#include "hardware.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "cmds.h"
+#include "hardware.h"
 
-enum mode {
-  mode_gb, mode_dev
+static bool state_locked = true;
+static bool state_passthrough = false;
+static bool state_reset = false;
+
+static const uint8_t NIBBLE_ASCII[] = {
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
 
-static int current_mode = mode_dev;
+ResponseCode string_error_response(const char *str) {
+  NELMAX.nelma.response_size = 0;
+  const char *ptr = str;
+  while (*ptr != 0x00) {
+    nelmax_write(&NELMAX, *(ptr++));
+  }
+  return STATUS_ERR_STR;
+}
 
-void cmd_ping(size_t payload_size) {
+ResponseCode cmd_ping(size_t payload_size) {
   uint8_t handshake[8];
   memcpy(handshake, nelmax_payload(&NELMAX), payload_size);
   nelmax_write_array(&NELMAX, handshake, payload_size);
+  return STATUS_OK;
 }
 
-void cmd_gameboy_mode() {
-  low_RSTCTRL();
-  __delay_us(1);
-  low_GB();
-  __delay_us(1);
-  low_OE();
-  __delay_us(1);
+ResponseCode cmd_version() {
+  // 2.0
+  nelmax_write(&NELMAX, 0x02);
+  nelmax_write(&NELMAX, 0x00);
+  return STATUS_OK;
 }
 
-void cmd_development_mode() {
-  high_RSTCTRL();
-  __delay_us(1);
-  high_GB();
-  __delay_us(1);
-  high_OE();
-  __delay_us(1);
+ResponseCode cmd_status() {
+  nelmax_write(&NELMAX, state_locked);
+  nelmax_write(&NELMAX, state_passthrough);
+  nelmax_write(&NELMAX, state_reset);
+  return STATUS_OK;
 }
 
-bool cmd_read_block(uint8_t addr_h) {
-  if (current_mode != mode_dev) {
-    return false;
+ResponseCode cmd_set_locked(bool value) {
+  state_locked = value;
+  return STATUS_OK;
+}
+
+ResponseCode cmd_set_passthrough(bool value) {
+  if (value) {
+    low_GB_EN();
+    low_OE();
+    state_passthrough = true;
+  } else {
+    high_OE();
+    high_GB_EN();
+    state_passthrough = false;
+  }
+  return STATUS_OK;
+}
+
+ResponseCode cmd_set_reset(bool value) {
+  if (value) {
+    low_GB_RES();
+    state_reset = true;
+  } else {
+    high_GB_RES();
+    state_reset = false;
+  }
+  return STATUS_OK;
+}
+
+ResponseCode cmd_read_block(uint8_t addr_h) {
+  if (state_locked) {
+    return string_error_response("Locked: block reads not allowed");
+  } else if (state_passthrough) {
+    return string_error_response("Pass-through mode: block reads not allowed");
   }
   cfg_A0_15_output();
   write_A8_15(addr_h);
@@ -53,61 +91,72 @@ bool cmd_read_block(uint8_t addr_h) {
 
   high_OE();
   cfg_A0_15_input();
-  return true;
+  return STATUS_OK;
 }
 
-bool cmd_write_block(uint8_t addr_h) {
-  if (current_mode != mode_dev) {
-    return false;
+ResponseCode cmd_write_block(uint8_t addr_h) {
+  if (state_locked) {
+    return string_error_response("Locked: block writes not allowed");
+  } else if (state_passthrough) {
+    return string_error_response("Pass-through mode: block writes not allowed");
   }
   cfg_A0_15_output();
   write_A8_15(addr_h);
+  cfg_D0_7_output();
 
   uint8_t addr_l = 0;
   do {
     write_A0_7(addr_l);
-    low_WR();
-    cfg_D0_7_output();
     write_D0_D7(nelmax_payload(&NELMAX)[addr_l + 1]);
+    low_WR();
     high_WR();
-    cfg_D0_7_input();
     addr_l++;
   } while (addr_l != 0);
 
+  cfg_D0_7_input();
   cfg_A0_15_input();
-  return true;
+  return STATUS_OK;
 }
 
-void cmd_reset() {
-  high_RSTCTRL();
-  __delay_ms(1);
-  low_RSTCTRL();
-}
-
-bool dispatch_command(uint8_t command, size_t payload_size) {
+ResponseCode dispatch_command(uint8_t command, size_t payload_size) {
   switch (command) {
-    case 'P':
-      cmd_ping(payload_size);
-      return true;
-    case 'G':
-      cmd_gameboy_mode();
-      return true;
-    case 'D':
-      cmd_development_mode();
-      return true;
-    case 'R':
+    case 0x01:
+      if (payload_size <= 8) {
+        return cmd_ping(payload_size);
+      }
+      break;
+    case 0x02:
+      return cmd_version();
+    case 0x03:
+      return cmd_status();
+    case 0x04:
+      if (payload_size == 1) {
+        return cmd_set_locked(nelmax_payload(&NELMAX)[0]);
+      }
+      break;
+    case 0x05:
+      if (payload_size == 1) {
+        return cmd_set_passthrough(nelmax_payload(&NELMAX)[0]);
+      }
+      break;
+    case 0x06:
+      if (payload_size == 1) {
+        return cmd_set_reset(nelmax_payload(&NELMAX)[0]);
+      }
+      break;
+    case 0x07:
       if (payload_size == 1) {
         return cmd_read_block(nelmax_payload(&NELMAX)[0]);
       }
       break;
-    case 'W':
+    case 0x08:
       if (payload_size == 257) {
         return cmd_write_block(nelmax_payload(&NELMAX)[0]);
       }
       break;
-    case 'B':
-      cmd_reset();
-      return true;
   }
-  return false;
+  string_error_response("Unsupported command: 0x");
+  nelmax_write(&NELMAX, NIBBLE_ASCII[(uint8_t)(command >> 4)]);
+  nelmax_write(&NELMAX, NIBBLE_ASCII[(uint8_t)(command & 0xf)]);
+  return STATUS_ERR_STR;
 }

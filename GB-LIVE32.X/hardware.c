@@ -1,50 +1,50 @@
 #include <xc.h>
-#include "hardware.h"
-
 #include <stddef.h>
 
-inline void low_GB() {
-  PORTCbits.RC0 = 0;
+#include "hardware.h"
+
+inline void low_GB_EN() {
+  LATCbits.LC0 = 0;
 }
 
-inline void high_GB() {
-  PORTCbits.RC0 = 1;
+inline void high_GB_EN() {
+  LATCbits.LC0 = 1;
 }
 
 inline void low_OE() {
-  PORTCbits.RC1 = 0;
+  LATCbits.LC1 = 0;
 }
 
 inline void high_OE() {
-  PORTCbits.RC1 = 1;
+  LATCbits.LC1 = 1;
 }
 
 inline void low_WR() {
-  PORTCbits.RC2 = 0;
+  LATCbits.LC2 = 0;
 }
 
 inline void high_WR() {
-  PORTCbits.RC2 = 1;
+  LATCbits.LC2 = 1;
 }
 
-inline void low_RSTCTRL() {
-  PORTEbits.RE2 = 0;
+inline void low_GB_RES() {
+  LATEbits.LE2 = 0;
 }
 
-inline void high_RSTCTRL() {
-  PORTEbits.RE2 = 1;
+inline void high_GB_RES() {
+  LATEbits.LE2 = 1;
 }
 
 inline void write_A0_7(uint8_t value) {
-  PORTB = value;
+  LATB = value;
 }
 
 inline void write_A8_15(uint8_t value) {
-  PORTA = value;
+  LATA = value;
 }
 
 inline void write_D0_D7(uint8_t value) {
-  PORTD = value;
+  LATD = value;
 }
 
 inline uint8_t read_D0_D7() {
@@ -123,10 +123,18 @@ void configure_hardware() {
   ACTCONbits.ACTSRC = 1;
   ACTCONbits.ACTEN = 1;
 
-  LATE2 = 0; // RSTCTRL, default to low
-  TRISC0 = 0; // GB
-  TRISC1 = 0; // OE
-  TRISC2 = 0; // WR
-  TRISE2 = 0; // RSTCTRL
-  TRISC6 = 0; // TX
+  TRISCbits.RC0 = 0; // GB_EN
+  TRISCbits.RC1 = 0; // OE
+  TRISCbits.RC2 = 0; // WR
+  TRISEbits.RE2 = 0; // GB_RES
+
+  // Unused pins -> output low
+  LATCbits.LC6 = 0;
+  LATCbits.LC7 = 0;
+  TRISCbits.RC6 = 0;
+  TRISCbits.RC7 = 0;
+  LATEbits.LE0 = 0;
+  LATEbits.LE1 = 0;
+  TRISEbits.RE0 = 0;
+  TRISEbits.RE1 = 0;
 }

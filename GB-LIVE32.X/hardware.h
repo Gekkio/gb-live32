@@ -2,7 +2,6 @@
 #define	HARDWARE_H
 
 #include <xc.h>
-
 #include <stdint.h>
 
 #define _XTAL_FREQ 48000000
@@ -78,24 +77,24 @@ extern struct {
   uint16_t chars[16];
 } serial_number;
 
-inline void low_GB();
-inline void high_GB();
-inline void low_OE();
-inline void high_OE();
-inline void low_WR();
-inline void high_WR();
-inline void low_RSTCTRL();
-inline void high_RSTCTRL();
+extern inline void low_GB_EN();
+extern inline void high_GB_EN();
+extern inline void low_OE();
+extern inline void high_OE();
+extern inline void low_WR();
+extern inline void high_WR();
+extern inline void low_GB_RES();
+extern inline void high_GB_RES();
 
-inline void cfg_A0_15_input();
-inline void cfg_A0_15_output();
-inline void cfg_D0_7_input();
-inline void cfg_D0_7_output();
+extern inline void cfg_A0_15_input();
+extern inline void cfg_A0_15_output();
+extern inline void cfg_D0_7_input();
+extern inline void cfg_D0_7_output();
 
-inline void write_A0_7(uint8_t value);
-inline void write_A8_15(uint8_t value);
-inline void write_D0_D7(uint8_t value);
-inline uint8_t read_D0_D7();
+extern inline void write_A0_7(uint8_t value);
+extern inline void write_A8_15(uint8_t value);
+extern inline void write_D0_D7(uint8_t value);
+extern inline uint8_t read_D0_D7();
 
 void print_serial_number_utf16(uint16_t *out);
 void configure_hardware();
