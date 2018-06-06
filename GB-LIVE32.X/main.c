@@ -29,6 +29,9 @@ void clear_sram(uint8_t value) {
   cfg_A0_15_input();
 }
 
+static volatile uint8_t tx_count = 0;
+static volatile uint8_t rx_count = 0;
+
 void main() {
   configure_hardware();
   clear_sram(0xFF);
@@ -39,7 +42,7 @@ void main() {
   usb_init();
   while (1) {
     CLRWDT();
-    if (usb_is_configured() &&
+    if (rx_count > 0 && usb_is_configured() &&
         !usb_out_endpoint_halted(2) &&
         usb_out_endpoint_has_data(2)) {
       const uint8_t *out_buf;
@@ -62,20 +65,25 @@ void main() {
               const uint8_t *encoded_chunk = encoded_packet + offset;
               offset += chunk_len;
 
-              while (usb_in_endpoint_busy(2)) {
+              while (usb_is_configured() && (tx_count > 1 || usb_in_endpoint_busy(2))) {
               }
+
               memcpy(usb_get_in_buffer(2), encoded_chunk, chunk_len);
+              tx_count += 1;
               usb_send_in_buffer(2, chunk_len);
             }
 
             if (chunk_len == EP_2_LEN) {
-              while (usb_in_endpoint_busy(2)) {
+              while (usb_is_configured() && (tx_count > 1 || usb_in_endpoint_busy(2))) {
               }
+
+              tx_count += 1;
               usb_send_in_buffer(2, 0);
             }
           }
         }
       }
+      rx_count -= 1;
       usb_arm_out_endpoint(2);
     }
   }
@@ -108,4 +116,23 @@ int8_t app_get_line_coding_callback(uint8_t, struct cdc_line_coding *coding) {
 
 int8_t app_set_control_line_state_callback(uint8_t, bool, bool) {
   return 0;
+}
+
+void app_in_transaction_complete_callback(uint8_t endpoint) {
+  if (endpoint == 2) {
+    if (tx_count > 0) {
+      tx_count -= 1;
+    }
+  }
+}
+
+void app_out_transaction_callback(uint8_t endpoint) {
+  if (endpoint == 2) {
+    rx_count += 1;
+  }
+}
+
+void app_usb_reset_callback() {
+  rx_count = 0;
+  tx_count = 0;
 }
