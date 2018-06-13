@@ -1,93 +1,92 @@
-#include <xc.h>
+#include "system.h"
 #include <stddef.h>
 
 #include "hardware.h"
 
-inline void low_GB_EN() {
+inline void low_GB_EN()
+{
   LATCbits.LC0 = 0;
 }
 
-inline void high_GB_EN() {
+inline void high_GB_EN()
+{
   LATCbits.LC0 = 1;
 }
 
-inline void low_OE() {
+inline void low_OE()
+{
   LATCbits.LC1 = 0;
 }
 
-inline void high_OE() {
+inline void high_OE()
+{
   LATCbits.LC1 = 1;
 }
 
-inline void low_WR() {
+inline void low_WR()
+{
   LATCbits.LC2 = 0;
 }
 
-inline void high_WR() {
+inline void high_WR()
+{
   LATCbits.LC2 = 1;
 }
 
-inline void low_GB_RES() {
+inline void low_GB_RES()
+{
   LATEbits.LE2 = 0;
 }
 
-inline void high_GB_RES() {
+inline void high_GB_RES()
+{
   LATEbits.LE2 = 1;
 }
 
-inline void write_A0_7(uint8_t value) {
+inline void write_A0_7(uint8_t value)
+{
   LATB = value;
 }
 
-inline void write_A8_15(uint8_t value) {
+inline void write_A8_15(uint8_t value)
+{
   LATA = value;
 }
 
-inline void write_D0_D7(uint8_t value) {
+inline void write_D0_D7(uint8_t value)
+{
   LATD = value;
 }
 
-inline uint8_t read_D0_D7() {
+inline uint8_t read_D0_D7()
+{
   return PORTD;
 }
 
-inline void cfg_A0_15_input() {
+inline void cfg_A0_15_input()
+{
   TRISA = 0xFF;
   TRISB = 0xFF;
 }
 
-inline void cfg_A0_15_output() {
+inline void cfg_A0_15_output()
+{
   TRISA = 0x00;
   TRISB = 0x00;
 }
 
-inline void cfg_D0_7_input() {
+inline void cfg_D0_7_input()
+{
   TRISD = 0xFF;
 }
 
-inline void cfg_D0_7_output() {
+inline void cfg_D0_7_output()
+{
   TRISD = 0x00;
 }
 
-static const uint8_t HEX[] = "0123456789ABCDEF";
-
-uint8_t read_eeprom(uint8_t addr) {
-  EEADR = addr;
-  EEPGD = 0;
-  CFGS = 0;
-  RD = 1;
-  return EEDATA;
-}
-
-void print_serial_number_utf16(uint16_t *out) {
-  for (size_t i = 0; i < 8; i++) {
-    uint8_t data = read_eeprom(i);
-    out[i] = HEX[(data >> 4) & 15];
-    out[i + 1] = HEX[(data >> 0) & 15];
-  }
-}
-
-void configure_hardware() {
+void configure_hardware()
+{
   // All I/O should be digital
   ANSELA = 0x00;
   ANSELB = 0x00;

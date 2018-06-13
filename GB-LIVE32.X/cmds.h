@@ -13,6 +13,4 @@ typedef uint8_t ResponseCode;
 
 extern ResponseCode dispatch_command(uint8_t command, size_t payload_size);
 
-extern struct NelmaX NELMAX;
-
 #endif	/* CMDS_H */

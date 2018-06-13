@@ -1,332 +1,164 @@
-/*
- * USB Descriptors file
- *
- * This file may be used by anyone for any purpose and may be used as a
- * starting point making your own application using M-Stack.
- *
- * It is worth noting that M-Stack itself is not under the same license as
- * this file.
- *
- * M-Stack is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  For details, see sections 7, 8, and 9
- * of the Apache License, version 2.0 which apply to this file.  If you have
- * purchased a commercial license for this software from Signal 11 Software,
- * your commerical license superceeds the information in this header.
- *
- * Alan Ott
- * Signal 11 Software
- */
-
-#include "usb_config.h"
 #include "usb.h"
-#include "usb_ch9.h"
-#include "usb_cdc.h"
+#include "usb_device_cdc.h"
 
-#ifdef __C18
-#define ROMPTR rom
-#else
-#define ROMPTR
-#endif
+#define USB_DESCRIPTOR_INTERFACE_ASSOCIATION 11
 
-/* Configuration Packet
- *
- * This packet contains a configuration descriptor, one or more interface
- * descriptors, class descriptors(optional), and endpoint descriptors for a
- * single configuration of the device.  This struct is specific to the
- * device, so the application will need to add any interfaces, classes and
- * endpoints it intends to use.  It is sent to the host in response to a
- * GET_DESCRIPTOR[CONFIGURATION] request.
- *
- * While Most devices will only have one configuration, a device can have as
- * many configurations as it needs.  To have more than one, simply make as
- * many of these structs as are required, one for each configuration.
- *
- * An instance of each configuration packet must be put in the
- * usb_application_config_descs[] array below (which is #defined in
- * usb_config.h) so that the USB stack can find it.
- *
- * See Chapter 9 of the USB specification from usb.org for details.
- *
- * It's worth noting that adding endpoints here does not automatically
- * enable them in the USB stack.  To use an endpoint, it must be declared
- * here and also in usb_config.h.
- *
- * The configuration packet below is for the mouse demo application.
- * Yours will of course vary.
- */
-struct configuration_1_packet {
-	struct configuration_descriptor  config;
-	struct interface_association_descriptor iad;
+typedef struct __attribute__ ((packed)) _USB_INTERFACE_ASSOCIATION_DESCRIPTOR {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bFirstInterface;
+  uint8_t bInterfaceCount;
+  uint8_t bFunctionClass;
+  uint8_t bFunctionSubClass;
+  uint8_t bFunctionProtocol;
+  uint8_t iFunction;
+} USB_INTERFACE_ASSOCIATION_DESCRIPTOR;
 
-	/* CDC Class Interface */
-	struct interface_descriptor      cdc_class_interface;
-	struct cdc_functional_descriptor_header cdc_func_header;
-	struct cdc_acm_functional_descriptor cdc_acm;
-	struct cdc_union_functional_descriptor cdc_union;
-	struct endpoint_descriptor       cdc_ep;
-
-	/* CDC Data Interface */
-	struct interface_descriptor      cdc_data_interface;
-	struct endpoint_descriptor       data_ep_in;
-	struct endpoint_descriptor       data_ep_out;
-
+const USB_DEVICE_DESCRIPTOR device_dsc = {
+  sizeof(device_dsc), // bLength
+  USB_DESCRIPTOR_DEVICE, // bDescriptorType
+  0x0200, // 0x0200 = USB 2.0, 0x0110 = USB 1.1
+  0xfe, // Device class
+  0x02,
+  0x01,
+  USB_EP0_BUFF_SIZE, // bMaxPacketSize0
+  0x16C0, // Vendor
+  0x05E1, // Product
+  0x0002, // device release (2.0)
+  1, // Manufacturer
+  2, // Product
+  0, // Serial
+  1
 };
 
+struct Configuration1 {
+  USB_CONFIGURATION_DESCRIPTOR config;
+  USB_INTERFACE_ASSOCIATION_DESCRIPTOR cdc_interface_assoc;
+  USB_INTERFACE_DESCRIPTOR cdc_interface;
+  USB_CDC_HEADER_FN_DSC cdc_header;
+  USB_CDC_ACM_FN_DSC cdc_acm;
+  USB_CDC_UNION_FN_DSC cdc_union;
 
-/* Device Descriptor
- *
- * Each device has a single device descriptor describing the device.  The
- * format is described in Chapter 9 of the USB specification from usb.org.
- * USB_DEVICE_DESCRIPTOR needs to be defined to the name of this object in
- * usb_config.h.  For more information, see USB_DEVICE_DESCRIPTOR in usb.h.
- */
-const ROMPTR struct device_descriptor this_device_descriptor =
-{
-	sizeof(struct device_descriptor), // bLength
-	DESC_DEVICE, // bDescriptorType
-	0x0200, // 0x0200 = USB 2.0, 0x0110 = USB 1.1
-	DEVICE_CLASS_MISC, // Device class
-	0x02, /* Device Subclass. See the document entitled: "USB Interface
-	         Association Descriptor Device Class Code and Use Model" */
-	0x01, // Protocol. See document referenced above.
-	EP_0_LEN, // bMaxPacketSize0
-	0x16C0, // Vendor
-	0x05E1, // Product
-	0x0002, // device release (2.0)
-	1, // Manufacturer
-	2, // Product
-	5, // Serial
-	NUMBER_OF_CONFIGURATIONS // NumConfigurations
+  USB_ENDPOINT_DESCRIPTOR cdc_notification;
+  USB_INTERFACE_DESCRIPTOR cdc_data_interface;
+  USB_ENDPOINT_DESCRIPTOR cdc_data_out;
+  USB_ENDPOINT_DESCRIPTOR cdc_data_in;
 };
 
-/* Configuration Packet Instance
- *
- * This is an instance of the configuration_packet struct containing all the
- * data describing a single configuration of this device.  It is wise to use
- * as much C here as possible, such as sizeof() operators, and #defines from
- * usb_config.h.  When stuff is wrong here, it can be difficult to track
- * down exactly why, so it's good to get the compiler to do as much of it
- * for you as it can.
- */
-static const ROMPTR struct configuration_1_packet configuration_1 =
-{
-	{
-	// Members from struct configuration_descriptor
-	sizeof(struct configuration_descriptor),
-	DESC_CONFIGURATION,
-	sizeof(configuration_1), // wTotalLength (length of the whole packet)
-	2, // bNumInterfaces
-	1, // bConfigurationValue
-	2, // iConfiguration (index of string descriptor)
-	0b10000000,
-	100/2,   // 100/2 indicates 100mA
-	},
-
-	/* Interface Association Descriptor */
-	{
-	sizeof(struct interface_association_descriptor),
-	DESC_INTERFACE_ASSOCIATION,
-	0, /* bFirstInterface */
-	2, /* bInterfaceCount */
-	CDC_COMMUNICATION_INTERFACE_CLASS,
-	CDC_COMMUNICATION_INTERFACE_CLASS_ACM_SUBCLASS,
-	0, /* bFunctionProtocol */
-	2, /* iFunction (string descriptor index) */
-	},
-
-	/* CDC Class Interface */
-	{
-	// Members from struct interface_descriptor
-	sizeof(struct interface_descriptor), // bLength;
-	DESC_INTERFACE,
-	0x0, // InterfaceNumber
-	0x0, // AlternateSetting
-	0x1, // bNumEndpoints
-	CDC_COMMUNICATION_INTERFACE_CLASS, // bInterfaceClass
-	CDC_COMMUNICATION_INTERFACE_CLASS_ACM_SUBCLASS, // bInterfaceSubclass
-	0x00, // bInterfaceProtocol
-	0x03, // iInterface (index of string describing interface)
-	},
-
-	/* CDC Functional Descriptor Header */
-	{
-	sizeof(struct cdc_functional_descriptor_header),
-	DESC_CS_INTERFACE,
-	CDC_FUNCTIONAL_DESCRIPTOR_SUBTYPE_HEADER,
-	0x0110, /* bcdCDC (version in BCD) */
-	},
-
-	/* CDC ACM Functional Descriptor */
-	{
-	sizeof(struct cdc_acm_functional_descriptor),
-	DESC_CS_INTERFACE,
-	CDC_FUNCTIONAL_DESCRIPTOR_SUBTYPE_ACM,
-	/* bmCapabilities: Make sure to keep in sync with the actual
-	 * capabilities (ie: which callbacks are defined). */
-	CDC_ACM_CAPABILITY_LINE_CODINGS,
-	},
-
-	/* CDC Union Functional Descriptor */
-	{
-	sizeof (struct cdc_union_functional_descriptor),
-	DESC_CS_INTERFACE,
-	CDC_FUNCTIONAL_DESCRIPTOR_SUBTYPE_UNION,
-	0, /* bMasterInterface */
-	1, /* bSlaveInterface0 */
-	},
-
-	/* CDC ACM Notification Endpoint (Endpoint 1 IN) */
-	{
-	sizeof(struct endpoint_descriptor),
-	DESC_ENDPOINT,
-	0x01 | 0x80, // endpoint #1 0x80=IN
-	EP_INTERRUPT, // bmAttributes
-	EP_1_IN_LEN, // wMaxPacketSize
-	1, // bInterval in ms.
-	},
-
-	/* CDC Data Interface */
-	{
-	// Members from struct interface_descriptor
-	sizeof(struct interface_descriptor), // bLength;
-	DESC_INTERFACE,
-	0x1, // InterfaceNumber
-	0x0, // AlternateSetting
-	0x2, // bNumEndpoints
-	CDC_DATA_INTERFACE_CLASS, // bInterfaceClass
-	0, // bInterfaceSubclass (no subclass)
-	CDC_DATA_INTERFACE_CLASS_PROTOCOL_NONE, // bInterfaceProtocol
-	0x04, // iInterface (index of string describing interface)
-	},
-
-	/* CDC Data IN Endpoint */
-	{
-	sizeof(struct endpoint_descriptor),
-	DESC_ENDPOINT,
-	0x02 | 0x80, // endpoint #2 0x80=IN
-	EP_BULK, // bmAttributes
-	EP_2_IN_LEN, // wMaxPacketSize
-	1, // bInterval in ms.
-	},
-
-	/* CDC Data OUT Endpoint */
-	{
-	sizeof(struct endpoint_descriptor),
-	DESC_ENDPOINT,
-	0x02 /*| 0x00*/, // endpoint #2 0x00=OUT
-	EP_BULK, // bmAttributes
-	EP_2_OUT_LEN, // wMaxPacketSize
-	1, // bInterval in ms.
-	},
+static const struct Configuration1 configuration_1 = {
+  {
+    sizeof(USB_CONFIGURATION_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_CONFIGURATION, // bDescriptorType
+    sizeof(struct Configuration1), // wTotalLength
+    2, // bNumInterfaces
+    1, // bConfigurationValue
+    0, // iConfiguration
+    USB_CFG_DSC_REQUIRED, // bmAttributes
+    100 / 2, // bMaxPower
+  },
+  {
+    sizeof(USB_INTERFACE_ASSOCIATION_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_INTERFACE_ASSOCIATION, // bDescriptorType
+    0, // bFirstInterface
+    2, // bInterfaceCount
+    COMM_INTF, // bFunctionClass
+    ABSTRACT_CONTROL_MODEL, // bFunctionSubClass
+    NO_PROTOCOL, // bInterfaceProtocol
+    0, // iFunction
+  },
+  {
+    sizeof(USB_INTERFACE_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_INTERFACE, // bDescriptorType
+    0, // bInterfaceNumber
+    0, // bAlternateSetting
+    1, // bNumEndpoints
+    COMM_INTF, // bInterfaceClass
+    ABSTRACT_CONTROL_MODEL, // bInterfaceSubClass
+    NO_PROTOCOL, // bInterfaceProtocol
+    0, // iInterface
+  },
+  {
+    sizeof(USB_CDC_HEADER_FN_DSC), // bFNLength
+    CS_INTERFACE, // bDscType
+    DSC_FN_HEADER, // bDscSubType
+    0x0110, // bcdCDC
+  },
+  {
+    sizeof(USB_CDC_ACM_FN_DSC), // bFNLength
+    CS_INTERFACE, // bDscType
+    DSC_FN_ACM, // bDscSubType
+    USB_CDC_ACM_FN_DSC_VAL, // bmCapabilities
+  },
+  {
+    sizeof(USB_CDC_UNION_FN_DSC), // bFNLength
+    CS_INTERFACE, // bDscType
+    DSC_FN_UNION, // bDscSubType
+    CDC_COMM_INTF_ID, // bMasterIntf
+    CDC_DATA_INTF_ID, // bSlaveIntf0
+  },
+  {
+    sizeof(USB_ENDPOINT_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_ENDPOINT, // bDescriptorType
+    _EP01_IN, // bEndpointAddress
+    EP_ATTR_INTR, // bmAttributes
+    CDC_COMM_IN_EP_SIZE, // wMaxPacketSize
+    0x01, // bInterval
+  },
+  {
+    sizeof(USB_INTERFACE_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_INTERFACE, // bDescriptorType
+    1, // bInterfaceNumber
+    0, // bAlternateSetting
+    2, // bNumEndpoints
+    DATA_INTF, // bInterfaceClass
+    0, // bInterfaceSubClass
+    NO_PROTOCOL, // bInterfaceProtocol
+    0, // iInterface
+  },
+  {
+    sizeof(USB_ENDPOINT_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_ENDPOINT, // bDescriptorType
+    _EP02_IN, // bEndpointAddress
+    _BULK, // bmAttributes
+    CDC_DATA_IN_EP_SIZE, // wMaxPacketSize
+    1, // bInterval
+  },
+  {
+    sizeof(USB_ENDPOINT_DESCRIPTOR), // bLength
+    USB_DESCRIPTOR_ENDPOINT, // bDescriptorType
+    _EP02_OUT, // bEndpointAddress
+    _BULK, // bmAttributes
+    CDC_DATA_OUT_EP_SIZE, // wMaxPacketSize
+    1, // bInterval
+  },
 };
 
-/* String Descriptors
- *
- * String descriptors are optional. If strings are used, string #0 is
- * required, and must contain the language ID of the other strings.  See
- * Chapter 9 of the USB specification from usb.org for more info.
- *
- * Strings are UTF-16 Unicode, and are not NULL-terminated, hence the
- * unusual syntax.
- */
-
-/* String index 0, only has one character in it, which is to be set to the
-   language ID of the language which the other strings are in. */
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t lang; } str00 = {
-	sizeof(str00),
-	DESC_STRING,
-	0x0409 // US English
+const uint8_t *const USB_CD_Ptr[] = {
+  (const uint8_t *) &configuration_1,
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[23]; } manufacturer_string = {
-	sizeof(manufacturer_string),
-	DESC_STRING,
-	{'h', 't', 't', 'p', 's', ':', '/', '/', 'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i',}
+#define STRING(L) const struct {uint8_t bLength; uint8_t bDescriptorType; uint16_t bString[L];}
+
+static STRING(1) string_0 = {
+  sizeof(string_0),
+  USB_DESCRIPTOR_STRING,
+  {0x0409}
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[12]; } product_string = {
-	sizeof(product_string),
-	DESC_STRING,
-	{'G', 'B', '-', 'L', 'I', 'V', 'E', '3', '2',}
+static STRING(17) string_manufacturer = {
+  sizeof(string_manufacturer),
+  USB_DESCRIPTOR_STRING,
+  {'h', 't', 't', 'p', 's', ':', '/', '/', 'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i',}
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[13]; } cdc_interface_string = {
-	sizeof(cdc_interface_string),
-	DESC_STRING,
-	{'C','D','C',' ','I','n','t','e','r','f','a','c','e'}
+static STRING(9) string_product = {
+  sizeof(string_product),
+  USB_DESCRIPTOR_STRING,
+  {'G', 'B', '-', 'L', 'I', 'V', 'E', '3', '2',}
 };
 
-static const ROMPTR struct {uint8_t bLength;uint8_t bDescriptorType; uint16_t chars[18]; } cdc_data_string = {
-	sizeof(cdc_data_string),
-	DESC_STRING,
-	{'C','D','C',' ','D','a','t','a',' ','I','n','t','e','r','f','a','c','e'}
+const uint8_t *const USB_SD_Ptr[USB_NUM_STRING_DESCRIPTORS] = {
+  (const uint8_t *) &string_0,
+  (const uint8_t *) &string_manufacturer,
+  (const uint8_t *) &string_product,
 };
-
-struct {
-  uint8_t length;
-  uint8_t descriptorType;
-  uint16_t chars[16];
-} serial_number = {
-  sizeof(serial_number),
-  DESC_STRING,
-  {0}
-};
-
-/* Get String function
- *
- * This function is called by the USB stack to get a pointer to a string
- * descriptor.  If using strings, USB_STRING_DESCRIPTOR_FUNC must be defined
- * to the name of this function in usb_config.h.  See
- * USB_STRING_DESCRIPTOR_FUNC in usb.h for information about this function.
- * This is a function, and not simply a list or map, because it is useful,
- * and advisable, to have a serial number string which may be read from
- * EEPROM or somewhere that's not part of static program memory.
- */
-int16_t usb_application_get_string(uint8_t string_number, const void **ptr)
-{
-	if (string_number == 0) {
-		*ptr = &str00;
-		return sizeof(str00);
-	}
-	else if (string_number == 1) {
-		*ptr = &manufacturer_string;
-		return sizeof(manufacturer_string);
-	}
-	else if (string_number == 2) {
-		*ptr = &product_string;
-		return sizeof(product_string);
-	}
-	else if (string_number == 3) {
-		*ptr = &cdc_interface_string;
-		return sizeof(cdc_interface_string);
-	}
-	else if (string_number == 4) {
-		*ptr = &cdc_data_string;
-		return sizeof(cdc_data_string);
-	}
-	else if (string_number == 5) {
-		*ptr = &serial_number;
-		return sizeof(serial_number);
-	}
-
-	return -1;
-}
-
-/* Configuration Descriptor List
- *
- * This is the list of pointters to the device's configuration descriptors.
- * The USB stack will read this array looking for descriptors which are
- * requsted from the host.  USB_CONFIG_DESCRIPTOR_MAP must be defined to the
- * name of this array in usb_config.h.  See USB_CONFIG_DESCRIPTOR_MAP in
- * usb.h for information about this array.  The order of the descriptors is
- * not important, as the USB stack reads bConfigurationValue for each
- * descriptor to know its index.  Make sure NUMBER_OF_CONFIGURATIONS in
- * usb_config.h matches the number of descriptors in this array.
- */
-const struct configuration_descriptor *usb_application_config_descs[] =
-{
-	(struct configuration_descriptor*) &configuration_1,
-};
-STATIC_SIZE_CHECK_EQUAL(USB_ARRAYLEN(USB_CONFIG_DESCRIPTOR_MAP), NUMBER_OF_CONFIGURATIONS);
-STATIC_SIZE_CHECK_EQUAL(sizeof(USB_DEVICE_DESCRIPTOR), 18);

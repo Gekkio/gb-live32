@@ -12,10 +12,10 @@ Licensed under either of
 
 at your option.
 
-Copyright (C) 2016 Joonas Javanainen joonas.javanainen@gmail.com
+Copyright (C) 2016-2018 Joonas Javanainen joonas.javanainen@gmail.com
 
 Uses:
 
-* [m-stack](https://github.com/signal11/m-stack)
+* [Microchip Libraries for Applications USB library](https://github.com/MicrochipTech/mla_usb)
 * [Consistent Overhead Byte Stuffing (COBS) from Jacques Fortier](https://github.com/jacquesf/COBS-Consistent-Overhead-Byte-Stuffing)
 * [Objective Development USB IDs](https://github.com/obdev/v-usb/blob/master/usbdrv/USB-IDs-for-free.txt)

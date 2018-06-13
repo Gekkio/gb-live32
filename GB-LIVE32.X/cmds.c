@@ -1,10 +1,12 @@
-#include <xc.h>
+#include "system.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "cmds.h"
 #include "hardware.h"
+
+extern struct NelmaX NELMAX;
 
 static bool state_locked = true;
 static bool state_passthrough = false;
@@ -14,7 +16,8 @@ static const uint8_t NIBBLE_ASCII[] = {
   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
 
-ResponseCode string_error_response(const char *str) {
+ResponseCode string_error_response(const char *str)
+{
   NELMAX.nelma.response_size = 0;
   const char *ptr = str;
   while (*ptr != 0x00) {
@@ -23,33 +26,38 @@ ResponseCode string_error_response(const char *str) {
   return STATUS_ERR_STR;
 }
 
-ResponseCode cmd_ping(size_t payload_size) {
+ResponseCode cmd_ping(size_t payload_size)
+{
   uint8_t handshake[8];
   memcpy(handshake, nelmax_payload(&NELMAX), payload_size);
   nelmax_write_array(&NELMAX, handshake, payload_size);
   return STATUS_OK;
 }
 
-ResponseCode cmd_version() {
+ResponseCode cmd_version()
+{
   // 2.0
   nelmax_write(&NELMAX, 0x02);
   nelmax_write(&NELMAX, 0x00);
   return STATUS_OK;
 }
 
-ResponseCode cmd_status() {
+ResponseCode cmd_status()
+{
   nelmax_write(&NELMAX, state_locked);
   nelmax_write(&NELMAX, state_passthrough);
   nelmax_write(&NELMAX, state_reset);
   return STATUS_OK;
 }
 
-ResponseCode cmd_set_locked(bool value) {
+ResponseCode cmd_set_locked(bool value)
+{
   state_locked = value;
   return STATUS_OK;
 }
 
-ResponseCode cmd_set_passthrough(bool value) {
+ResponseCode cmd_set_passthrough(bool value)
+{
   if (value) {
     low_GB_EN();
     low_OE();
@@ -62,7 +70,8 @@ ResponseCode cmd_set_passthrough(bool value) {
   return STATUS_OK;
 }
 
-ResponseCode cmd_set_reset(bool value) {
+ResponseCode cmd_set_reset(bool value)
+{
   if (value) {
     low_GB_RES();
     state_reset = true;
@@ -73,7 +82,8 @@ ResponseCode cmd_set_reset(bool value) {
   return STATUS_OK;
 }
 
-ResponseCode cmd_read_block(uint8_t addr_h) {
+ResponseCode cmd_read_block(uint8_t addr_h)
+{
   if (state_locked) {
     return string_error_response("Locked: block reads not allowed");
   } else if (state_passthrough) {
@@ -94,7 +104,8 @@ ResponseCode cmd_read_block(uint8_t addr_h) {
   return STATUS_OK;
 }
 
-ResponseCode cmd_write_block(uint8_t addr_h) {
+ResponseCode cmd_write_block(uint8_t addr_h)
+{
   if (state_locked) {
     return string_error_response("Locked: block writes not allowed");
   } else if (state_passthrough) {
@@ -118,7 +129,8 @@ ResponseCode cmd_write_block(uint8_t addr_h) {
   return STATUS_OK;
 }
 
-ResponseCode dispatch_command(uint8_t command, size_t payload_size) {
+ResponseCode dispatch_command(uint8_t command, size_t payload_size)
+{
   switch (command) {
     case 0x01:
       if (payload_size <= 8) {
