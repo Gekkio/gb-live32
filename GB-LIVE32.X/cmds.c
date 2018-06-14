@@ -129,7 +129,43 @@ ResponseCode cmd_write_block(uint8_t addr_h)
   return STATUS_OK;
 }
 
-ResponseCode dispatch_command(uint8_t command, size_t payload_size)
+ResponseCode cmd_rx_stream(struct State *state)
+{
+  if (state_locked) {
+    return string_error_response("Locked: rx stream not allowed");
+  } else if (state_passthrough) {
+    return string_error_response("Pass-through mode: rx stream not allowed");
+  }
+  state->tag = STATE_RX_STREAM;
+  state->stream.addr_h = 0x00;
+  state->stream.addr_l = 0x00;
+  state->stream.remaining = 0x8000;
+  cfg_A0_15_output();
+  write_A8_15(0x00);
+  cfg_D0_7_output();
+
+  return STATUS_OK;
+}
+
+ResponseCode cmd_tx_stream(struct State *state)
+{
+  if (state_locked) {
+    return string_error_response("Locked: tx stream not allowed");
+  } else if (state_passthrough) {
+    return string_error_response("Pass-through mode: tx stream not allowed");
+  }
+  state->tag = STATE_TX_STREAM;
+  state->stream.addr_h = 0x00;
+  state->stream.addr_l = 0x00;
+  state->stream.remaining = 0x8000;
+  cfg_A0_15_output();
+  write_A8_15(0x00);
+  low_OE();
+
+  return STATUS_OK;
+}
+
+ResponseCode dispatch_command(uint8_t command, size_t payload_size, struct State *state)
 {
   switch (command) {
     case 0x01:
@@ -138,9 +174,15 @@ ResponseCode dispatch_command(uint8_t command, size_t payload_size)
       }
       break;
     case 0x02:
-      return cmd_version();
+      if (payload_size == 0) {
+        return cmd_version();
+      }
+      break;
     case 0x03:
-      return cmd_status();
+      if (payload_size == 0) {
+        return cmd_status();
+      }
+      break;
     case 0x04:
       if (payload_size == 1) {
         return cmd_set_locked(nelmax_payload(&NELMAX)[0]);
@@ -164,6 +206,16 @@ ResponseCode dispatch_command(uint8_t command, size_t payload_size)
     case 0x08:
       if (payload_size == 257) {
         return cmd_write_block(nelmax_payload(&NELMAX)[0]);
+      }
+      break;
+    case 0x09:
+      if (payload_size == 0) {
+        return cmd_rx_stream(state);
+      }
+      break;
+    case 0x0A:
+      if (payload_size == 0) {
+        return cmd_tx_stream(state);
       }
       break;
   }

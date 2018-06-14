@@ -32,43 +32,127 @@ void clear_sram(uint8_t value)
   cfg_A0_15_input();
 }
 
-static uint8_t out_buffer[CDC_DATA_OUT_EP_SIZE];
+static uint8_t rx_buffer[CDC_DATA_OUT_EP_SIZE];
+static uint8_t tx_buffer[CDC_DATA_IN_EP_SIZE];
 
-void handle_rx_data(uint8_t out_buf_len)
-{
-  uint8_t command;
-  size_t payload_size;
+struct RxState {
+  const uint8_t *buf;
+  size_t remaining;
+};
 
-  for (size_t i = 0; i < out_buf_len; i++) {
-    if (nelmax_read(&NELMAX, out_buffer[i], &command, &payload_size)) {
-      nelmax_write(&NELMAX, dispatch_command(command, payload_size));
-      size_t response_len = nelmax_encode_response(&NELMAX);
-      const uint8_t *encoded_packet = nelmax_encoded_packet(&NELMAX);
+struct TxState {
+  const uint8_t *buf;
+  size_t remaining;
+};
 
-      size_t offset = 0;
-      size_t chunk_len;
-      while (offset < response_len) {
-        chunk_len = MIN(response_len - offset, UINT8_MAX);
-        const uint8_t *encoded_chunk = encoded_packet + offset;
-        offset += chunk_len;
+static struct RxState rx_state = {0};
+static struct TxState tx_state = {0};
 
-        while (!USBUSARTIsTxTrfReady()) {
-          if (USBGetDeviceState() < CONFIGURED_STATE) {
-            return;
-          } else if (USBIsDeviceSuspended()) {
-            continue;
-          }
-          CDCTxService();
-        }
+static struct State state = {0};
 
-        putUSBUSART((uint8_t *) encoded_chunk, chunk_len);
+void tick_state() {
+  switch (state.tag) {
+    case STATE_CMD: {
+      if (tx_state.remaining > 0) {
+        return;
       }
+      while (rx_state.remaining > 0) {
+        uint8_t byte = *(rx_state.buf++);
+        rx_state.remaining -= 1;
+
+        uint8_t command;
+        size_t payload_size;
+
+        if (nelmax_read(&NELMAX, byte, &command, &payload_size)) {
+          nelmax_write(&NELMAX, dispatch_command(command, payload_size, &state));
+          tx_state.buf = nelmax_encoded_packet(&NELMAX);
+          tx_state.remaining = nelmax_encode_response(&NELMAX);
+          return;
+        }
+      }
+      return;
+    }
+    case STATE_RX_STREAM: {
+      if (rx_state.remaining <= 0) {
+        return;
+      }
+      if (state.stream.remaining <= 0) {
+        cfg_D0_7_input();
+        cfg_A0_15_input();
+        state.tag = STATE_CMD;
+        return;
+      }
+      while (state.stream.remaining > 0 && rx_state.remaining > 0) {
+        uint8_t byte = *(rx_state.buf++);
+        rx_state.remaining -= 1;
+
+        write_A0_7(state.stream.addr_l);
+        write_D0_D7(byte);
+        low_WR();
+        high_WR();
+
+        state.stream.remaining -= 1;
+        state.stream.addr_l += 1;
+        if (state.stream.addr_l == 0x00) {
+          state.stream.addr_h += 1;
+          write_A8_15(state.stream.addr_h);
+        }
+      }
+      return;
+    }
+    case STATE_TX_STREAM: {
+      if (tx_state.remaining > 0) {
+        return;
+      }
+      if (state.stream.remaining <= 0) {
+        high_OE();
+        cfg_A0_15_input();
+        state.tag = STATE_CMD;
+        return;
+      }
+      size_t len = 0;
+      while (state.stream.remaining > 0 && len < CDC_DATA_IN_EP_SIZE) {
+        state.stream.remaining -= 1;
+        write_A0_7(state.stream.addr_l);
+        tx_buffer[len++] = read_D0_D7();
+        state.stream.addr_l += 1;
+        if (state.stream.addr_l == 0x00) {
+          state.stream.addr_h += 1;
+          write_A8_15(state.stream.addr_h);
+        }
+      }
+      tx_state.buf = tx_buffer;
+      tx_state.remaining = len;
     }
   }
 }
 
+void tick_rx()
+{
+  if (rx_state.remaining > 0) {
+    return;
+  }
+  uint8_t remaining = getsUSBUSART(rx_buffer, CDC_DATA_OUT_EP_SIZE);
+  if (remaining > 0) {
+    rx_state.buf = rx_buffer;
+    rx_state.remaining = remaining;
+  }
+}
+
+void tick_tx()
+{
+  if (tx_state.remaining <= 0 || !USBUSARTIsTxTrfReady()) {
+    return;
+  }
+  size_t chunk_len = MIN(tx_state.remaining, CDC_DATA_IN_EP_SIZE);
+  putUSBUSART((uint8_t *) tx_state.buf, chunk_len);
+  tx_state.buf += chunk_len;
+  tx_state.remaining -= chunk_len;
+}
+
 void main()
 {
+  state.tag = STATE_CMD;
   configure_hardware();
   clear_sram(0xFF);
 
@@ -85,10 +169,9 @@ void main()
       continue;
     }
 
-    uint8_t out_buf_len = getsUSBUSART(out_buffer, CDC_DATA_OUT_EP_SIZE);
-    if (out_buf_len > 0) {
-      handle_rx_data(out_buf_len);
-    }
+    tick_state();
+    tick_rx();
+    tick_tx();
 
     CDCTxService();
   }
@@ -110,6 +193,11 @@ bool USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, uint16_t size
       break;
     case EVENT_EP0_REQUEST:
       USBCheckCDCRequest();
+      break;
+    case EVENT_RESET:
+      state.tag = STATE_CMD;
+      rx_state.remaining = 0;
+      tx_state.remaining = 0;
       break;
     default:
       break;
