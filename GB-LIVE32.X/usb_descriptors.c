@@ -23,11 +23,11 @@ const USB_DEVICE_DESCRIPTOR device_dsc = {
   0x01,
   USB_EP0_BUFF_SIZE, // bMaxPacketSize0
   0x16C0, // Vendor
-  0x05E1, // Product
+  0x27DD, // Product
   0x0002, // device release (2.0)
   1, // Manufacturer
   2, // Product
-  0, // Serial
+  3, // Serial
   1
 };
 
@@ -157,8 +157,15 @@ static STRING(9) string_product = {
   {'G', 'B', '-', 'L', 'I', 'V', 'E', '3', '2',}
 };
 
+static STRING(19) string_serial = {
+  sizeof(string_serial),
+  USB_DESCRIPTOR_STRING,
+  {'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i', ':', 'G', 'B', '-', 'L', 'I', 'V', 'E', '3', '2',}
+};
+
 const uint8_t *const USB_SD_Ptr[USB_NUM_STRING_DESCRIPTORS] = {
   (const uint8_t *) &string_0,
   (const uint8_t *) &string_manufacturer,
   (const uint8_t *) &string_product,
+  (const uint8_t *) &string_serial,
 };
