@@ -54,7 +54,7 @@ static const struct Configuration1 configuration_1 = {
     1, // bConfigurationValue
     0, // iConfiguration
     USB_CFG_DSC_REQUIRED, // bmAttributes
-    100 / 2, // bMaxPower
+    30 / 2, // bMaxPower
   },
   {
     sizeof(USB_INTERFACE_ASSOCIATION_DESCRIPTOR), // bLength
