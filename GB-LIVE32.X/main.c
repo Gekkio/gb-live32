@@ -213,7 +213,8 @@ void main()
 
     if (device_state == DETACHED_STATE) {
       USBDeviceAttach();
-    } else if (device_state < CONFIGURED_STATE || USBIsDeviceSuspended()) {
+    }
+    if (device_state < CONFIGURED_STATE || USBIsDeviceSuspended()) {
       continue;
     }
 
