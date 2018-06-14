@@ -48,12 +48,54 @@ struct TxState {
 static struct RxState rx_state = {0};
 static struct TxState tx_state = {0};
 
-static struct State state = {0};
+struct State state = {0};
 
-void tick_state() {
+union Events {
+  struct {
+    uint8_t reset: 1;
+    uint8_t sof: 1;
+  };
+  uint8_t byte;
+};
+
+static volatile union Events events;
+
+void reset()
+{
+  cfg_D0_7_input();
+  cfg_A0_15_input();
+  high_OE();
+  high_WR();
+  high_GB_RES();
+  high_GB_EN();
+  rx_state.remaining = 0;
+  tx_state.remaining = 0;
+  events.byte = 0;
+  memset(&state, 0, sizeof(struct State));
+}
+
+void check_blocked()
+{
+  if (!events.sof) {
+    return;
+  }
+  events.sof = false;
+  state.blocked_ticks += 1;
+  if (state.blocked_ticks > 1000) {
+    reset();
+  }
+}
+
+void tick_state()
+{
+  if (events.reset) {
+    events.reset = 0;
+    reset();
+  }
   switch (state.tag) {
     case STATE_CMD: {
       if (tx_state.remaining > 0) {
+        check_blocked();
         return;
       }
       while (rx_state.remaining > 0) {
@@ -64,7 +106,8 @@ void tick_state() {
         size_t payload_size;
 
         if (nelmax_read(&NELMAX, byte, &command, &payload_size)) {
-          nelmax_write(&NELMAX, dispatch_command(command, payload_size, &state));
+          nelmax_write(&NELMAX, dispatch_command(command, payload_size));
+          state.blocked_ticks = 0;
           tx_state.buf = nelmax_encoded_packet(&NELMAX);
           tx_state.remaining = nelmax_encode_response(&NELMAX);
           return;
@@ -74,8 +117,10 @@ void tick_state() {
     }
     case STATE_RX_STREAM: {
       if (rx_state.remaining <= 0) {
+        check_blocked();
         return;
       }
+      state.blocked_ticks = 0;
       if (state.stream.remaining <= 0) {
         cfg_D0_7_input();
         cfg_A0_15_input();
@@ -102,8 +147,10 @@ void tick_state() {
     }
     case STATE_TX_STREAM: {
       if (tx_state.remaining > 0) {
+        check_blocked();
         return;
       }
+      state.blocked_ticks = 0;
       if (state.stream.remaining <= 0) {
         high_OE();
         cfg_A0_15_input();
@@ -153,6 +200,7 @@ void tick_tx()
 void main()
 {
   state.tag = STATE_CMD;
+  events.byte = 0;
   configure_hardware();
   clear_sram(0xFF);
 
@@ -188,6 +236,9 @@ bool USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, uint16_t size
     return true;
   }
   switch (event) {
+    case EVENT_SOF:
+      events.sof = true;
+      break;
     case EVENT_CONFIGURED:
       CDCInitEP();
       break;
@@ -195,9 +246,7 @@ bool USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, uint16_t size
       USBCheckCDCRequest();
       break;
     case EVENT_RESET:
-      state.tag = STATE_CMD;
-      rx_state.remaining = 0;
-      tx_state.remaining = 0;
+      events.reset = true;
       break;
     default:
       break;

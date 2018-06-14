@@ -8,10 +8,6 @@
 
 extern struct NelmaX NELMAX;
 
-static bool state_locked = true;
-static bool state_passthrough = false;
-static bool state_reset = false;
-
 static const uint8_t NIBBLE_ASCII[] = {
   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
@@ -44,15 +40,15 @@ ResponseCode cmd_version()
 
 ResponseCode cmd_status()
 {
-  nelmax_write(&NELMAX, state_locked);
-  nelmax_write(&NELMAX, state_passthrough);
-  nelmax_write(&NELMAX, state_reset);
+  nelmax_write(&NELMAX, state.unlocked);
+  nelmax_write(&NELMAX, state.passthrough);
+  nelmax_write(&NELMAX, state.reset);
   return STATUS_OK;
 }
 
-ResponseCode cmd_set_locked(bool value)
+ResponseCode cmd_set_unlocked(bool value)
 {
-  state_locked = value;
+  state.unlocked = value;
   return STATUS_OK;
 }
 
@@ -61,11 +57,11 @@ ResponseCode cmd_set_passthrough(bool value)
   if (value) {
     low_GB_EN();
     low_OE();
-    state_passthrough = true;
+    state.passthrough = true;
   } else {
     high_OE();
     high_GB_EN();
-    state_passthrough = false;
+    state.passthrough = false;
   }
   return STATUS_OK;
 }
@@ -74,19 +70,19 @@ ResponseCode cmd_set_reset(bool value)
 {
   if (value) {
     low_GB_RES();
-    state_reset = true;
+    state.reset = true;
   } else {
     high_GB_RES();
-    state_reset = false;
+    state.reset = false;
   }
   return STATUS_OK;
 }
 
 ResponseCode cmd_read_block(uint8_t addr_h)
 {
-  if (state_locked) {
+  if (!state.unlocked) {
     return string_error_response("Locked: block reads not allowed");
-  } else if (state_passthrough) {
+  } else if (state.passthrough) {
     return string_error_response("Pass-through mode: block reads not allowed");
   }
   cfg_A0_15_output();
@@ -106,9 +102,9 @@ ResponseCode cmd_read_block(uint8_t addr_h)
 
 ResponseCode cmd_write_block(uint8_t addr_h)
 {
-  if (state_locked) {
+  if (!state.unlocked) {
     return string_error_response("Locked: block writes not allowed");
-  } else if (state_passthrough) {
+  } else if (state.passthrough) {
     return string_error_response("Pass-through mode: block writes not allowed");
   }
   cfg_A0_15_output();
@@ -129,17 +125,17 @@ ResponseCode cmd_write_block(uint8_t addr_h)
   return STATUS_OK;
 }
 
-ResponseCode cmd_rx_stream(struct State *state)
+ResponseCode cmd_rx_stream()
 {
-  if (state_locked) {
+  if (!state.unlocked) {
     return string_error_response("Locked: rx stream not allowed");
-  } else if (state_passthrough) {
+  } else if (state.passthrough) {
     return string_error_response("Pass-through mode: rx stream not allowed");
   }
-  state->tag = STATE_RX_STREAM;
-  state->stream.addr_h = 0x00;
-  state->stream.addr_l = 0x00;
-  state->stream.remaining = 0x8000;
+  state.tag = STATE_RX_STREAM;
+  state.stream.addr_h = 0x00;
+  state.stream.addr_l = 0x00;
+  state.stream.remaining = 0x8000;
   cfg_A0_15_output();
   write_A8_15(0x00);
   cfg_D0_7_output();
@@ -147,17 +143,17 @@ ResponseCode cmd_rx_stream(struct State *state)
   return STATUS_OK;
 }
 
-ResponseCode cmd_tx_stream(struct State *state)
+ResponseCode cmd_tx_stream()
 {
-  if (state_locked) {
+  if (!state.unlocked) {
     return string_error_response("Locked: tx stream not allowed");
-  } else if (state_passthrough) {
+  } else if (state.passthrough) {
     return string_error_response("Pass-through mode: tx stream not allowed");
   }
-  state->tag = STATE_TX_STREAM;
-  state->stream.addr_h = 0x00;
-  state->stream.addr_l = 0x00;
-  state->stream.remaining = 0x8000;
+  state.tag = STATE_TX_STREAM;
+  state.stream.addr_h = 0x00;
+  state.stream.addr_l = 0x00;
+  state.stream.remaining = 0x8000;
   cfg_A0_15_output();
   write_A8_15(0x00);
   low_OE();
@@ -165,7 +161,7 @@ ResponseCode cmd_tx_stream(struct State *state)
   return STATUS_OK;
 }
 
-ResponseCode dispatch_command(uint8_t command, size_t payload_size, struct State *state)
+ResponseCode dispatch_command(uint8_t command, size_t payload_size)
 {
   switch (command) {
     case 0x01:
@@ -185,7 +181,7 @@ ResponseCode dispatch_command(uint8_t command, size_t payload_size, struct State
       break;
     case 0x04:
       if (payload_size == 1) {
-        return cmd_set_locked(nelmax_payload(&NELMAX)[0]);
+        return cmd_set_unlocked(nelmax_payload(&NELMAX)[0]);
       }
       break;
     case 0x05:
@@ -210,12 +206,12 @@ ResponseCode dispatch_command(uint8_t command, size_t payload_size, struct State
       break;
     case 0x09:
       if (payload_size == 0) {
-        return cmd_rx_stream(state);
+        return cmd_rx_stream();
       }
       break;
     case 0x0A:
       if (payload_size == 0) {
-        return cmd_tx_stream(state);
+        return cmd_tx_stream();
       }
       break;
   }
