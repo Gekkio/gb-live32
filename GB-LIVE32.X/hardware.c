@@ -111,7 +111,7 @@ void configure_hardware()
   // By default, the system clock is based on the internal oscillator
   OSCCONbits.IRCF = 0b111; // Set internal oscillator to 16MHz
   // Wait for a stable clock
-  while (!OSCCONbits.HFIOFS) {
+  while (!OSCCONbits.HFIOFS || !OSCCON2bits.PLLRDY) {
   }
 
   // Enable interrupts for USB

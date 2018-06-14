@@ -213,8 +213,11 @@ void main()
 
     if (device_state == DETACHED_STATE) {
       USBDeviceAttach();
-    }
-    if (device_state < CONFIGURED_STATE || USBIsDeviceSuspended()) {
+      continue;
+    } else if (device_state < CONFIGURED_STATE) {
+      continue;
+    } else if (USBIsDeviceSuspended()) {
+      SLEEP();
       continue;
     }
 
@@ -229,6 +232,22 @@ void main()
 void interrupt high_priority isr()
 {
   USBDeviceTasks();
+}
+
+void suspend()
+{
+  ACTCONbits.ACTEN = 0;
+  OSCCON2bits.INTSRC = 0;
+  OSCCONbits.IRCF = 0b000;
+}
+
+void resume()
+{
+  OSCCONbits.IRCF = 0b111;
+  OSCCON2bits.INTSRC = 1;
+  while (!OSCCONbits.HFIOFS || !OSCCON2bits.PLLRDY) {
+  }
+  ACTCONbits.ACTEN = 1;
 }
 
 bool USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, uint16_t size)
@@ -248,6 +267,12 @@ bool USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, uint16_t size
       break;
     case EVENT_RESET:
       events.reset = true;
+      break;
+    case EVENT_SUSPEND:
+      suspend();
+      break;
+    case EVENT_RESUME:
+      resume();
       break;
     default:
       break;
