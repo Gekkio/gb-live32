@@ -145,10 +145,10 @@ static STRING(1) string_0 = {
   {0x0409}
 };
 
-static STRING(17) string_manufacturer = {
+static STRING(9) string_manufacturer = {
   sizeof(string_manufacturer),
   USB_DESCRIPTOR_STRING,
-  {'h', 't', 't', 'p', 's', ':', '/', '/', 'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i',}
+  {'g', 'e', 'k', 'k', 'i', 'o', '.', 'f', 'i',}
 };
 
 static STRING(9) string_product = {
