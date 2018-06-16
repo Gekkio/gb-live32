@@ -6,8 +6,8 @@ extern crate rand;
 extern crate serialport;
 
 use bufstream::BufStream;
-use rand::{FromEntropy, RngCore};
 use rand::rngs::SmallRng;
+use rand::{FromEntropy, RngCore};
 use serialport::SerialPort;
 use std::io::{self, BufRead, Read, Write};
 use std::time::Duration;
