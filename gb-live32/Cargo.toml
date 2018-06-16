@@ -1,0 +1,17 @@
+[package]
+name = "gb-live32"
+version = "0.1.0"
+authors = ["Joonas Javanainen <joonas.javanainen@gmail.com>"]
+description = "CLI for the GB-LIVE32 rapid development board"
+license = "MIT/Apache-2.0"
+
+[dependencies]
+bufstream = "0.1"
+clap = "2.31"
+cobs = "0.1"
+failure = "0.1"
+itertools = "0.7"
+log = "0.4"
+rand = "0.5"
+serialport = "2.3"
+simplelog = "0.5"
