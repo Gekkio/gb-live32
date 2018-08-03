@@ -32,7 +32,9 @@ fn scan_ports() -> Result<Vec<OsString>, Error> {
         let manufacturer = info.manufacturer.as_ref().map_or("", String::as_ref);
         let product = info.product.as_ref().map_or("", String::as_ref);
         let serial_number = info.serial_number.as_ref().map_or("", String::as_ref);
-        if info.vid == 0x16c0 && info.pid == 0x05e1 && manufacturer == "gekkio.fi"
+        if info.vid == 0x16c0
+          && info.pid == 0x05e1
+          && manufacturer == "gekkio.fi"
           && product == "GB-LIVE32"
         {
           info!("Detected device: {} ({:04x}:{:04x}, manufacturer=\"{}\", product=\"{}\", serial=\"{}\")",
@@ -126,11 +128,14 @@ fn unlock_if_necessary(name: &str, gbl32: &mut Gbl32) -> Result<(), Error> {
 fn run(matches: &ArgMatches) -> Result<(), Error> {
   let _ = TermLogger::init(LevelFilter::Debug, simplelog::Config::default());
 
-  let mut ports = scan_ports()?;
-  if !matches.is_present("broadcast") {
-    if let Some(devices) = matches.values_of_os("port") {
-      ports = devices.map(OsStr::to_os_string).collect();
-    } else if ports.len() > 1 {
+  let ports;
+  if matches.is_present("broadcast") {
+    ports = scan_ports()?;
+  } else if let Some(devices) = matches.values_of_os("port") {
+    ports = devices.map(OsStr::to_os_string).collect();
+  } else {
+    ports = scan_ports()?;
+    if ports.len() > 1 {
       bail!("Too many detected devices for automatic selection");
     }
   }
