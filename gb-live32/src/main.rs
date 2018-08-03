@@ -124,7 +124,7 @@ fn unlock_if_necessary(name: &str, gbl32: &mut Gbl32) -> Result<(), Error> {
 }
 
 fn run(matches: &ArgMatches) -> Result<(), Error> {
-  TermLogger::init(LevelFilter::Debug, simplelog::Config::default())?;
+  let _ = TermLogger::init(LevelFilter::Debug, simplelog::Config::default());
 
   let mut ports = scan_ports()?;
   if !matches.is_present("broadcast") {
