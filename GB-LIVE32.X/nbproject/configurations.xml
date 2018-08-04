@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="62">
+<configurationDescriptor version="65">
   <logicalFolder name="root" displayName="root" projectFiles="true">
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <logicalFolder name="f1" displayName="mla_usb" projectFiles="true">
+      <logicalFolder name="f2" displayName="mla_usb" projectFiles="true">
         <itemPath>../third-party/mla_usb/inc/usb.h</itemPath>
         <itemPath>../third-party/mla_usb/inc/usb_ch9.h</itemPath>
         <itemPath>../third-party/mla_usb/inc/usb_common.h</itemPath>
@@ -13,15 +13,15 @@
         <itemPath>../third-party/mla_usb/inc/usb_hal.h</itemPath>
         <itemPath>../third-party/mla_usb/inc/usb_hal_pic18.h</itemPath>
       </logicalFolder>
-      <logicalFolder name="f2" displayName="nelma" projectFiles="true">
+      <logicalFolder name="f1" displayName="nelma" projectFiles="true">
+        <itemPath>../third-party/nelma/cobs.h</itemPath>
         <itemPath>../third-party/nelma/nelma.h</itemPath>
         <itemPath>../third-party/nelma/nelmax.h</itemPath>
-        <itemPath>../third-party/nelma/cobs.h</itemPath>
       </logicalFolder>
       <itemPath>cmds.h</itemPath>
       <itemPath>hardware.h</itemPath>
-      <itemPath>usb_config.h</itemPath>
       <itemPath>system.h</itemPath>
+      <itemPath>usb_config.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -39,10 +39,10 @@
         <itemPath>../third-party/nelma/nelma.c</itemPath>
         <itemPath>../third-party/nelma/nelmax.c</itemPath>
       </logicalFolder>
-      <itemPath>main.c</itemPath>
       <itemPath>cmds.c</itemPath>
-      <itemPath>usb_descriptors.c</itemPath>
       <itemPath>hardware.c</itemPath>
+      <itemPath>main.c</itemPath>
+      <itemPath>usb_descriptors.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -51,9 +51,9 @@
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
-    <Elem>../third-party/nelma</Elem>
     <Elem>../third-party/mla_usb/inc</Elem>
     <Elem>../third-party/mla_usb/src</Elem>
+    <Elem>../third-party/nelma</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -63,11 +63,14 @@
         <targetDevice>PIC18F45K50</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>PICkit3PlatformTool</platformTool>
+        <platformTool>Simulator</platformTool>
         <languageToolchain>XC8</languageToolchain>
-        <languageToolchainVersion>1.45</languageToolchainVersion>
+        <languageToolchainVersion>2.00</languageToolchainVersion>
         <platform>2</platform>
       </toolsSet>
+      <packs>
+        <pack name="PIC18F-K_DFP" vendor="Microchip" version="0.1.33"/>
+      </packs>
       <compileType>
         <linkerTool>
           <linkerLibItems>
@@ -97,19 +100,19 @@
         <property key="define-macros" value="NELMAX_MAX_PAYLOAD_SIZE=258"/>
         <property key="disable-optimizations" value="false"/>
         <property key="extra-include-directories"
-                  value="../third-party/mla_usb/inc;./;../third-party/nelma"/>
-        <property key="favor-optimization-for" value="+speed,-space"/>
+                  value="../third-party/mla_usb/inc;../third-party/nelma;."/>
+        <property key="favor-optimization-for" value="-speed,+space"/>
         <property key="identifier-length" value="255"/>
         <property key="local-generation" value="false"/>
-        <property key="operation-mode" value="free"/>
+        <property key="operation-mode" value="pro"/>
         <property key="opt-xc8-compiler-strict_ansi" value="false"/>
         <property key="optimization-assembler" value="true"/>
         <property key="optimization-assembler-files" value="true"/>
         <property key="optimization-debug" value="false"/>
         <property key="optimization-invariant-enable" value="false"/>
         <property key="optimization-invariant-value" value="16"/>
-        <property key="optimization-level" value="9"/>
-        <property key="optimization-speed" value="true"/>
+        <property key="optimization-level" value="-O1"/>
+        <property key="optimization-speed" value="false"/>
         <property key="optimization-stable-enable" value="false"/>
         <property key="preprocess-assembler" value="true"/>
         <property key="undefine-macros" value=""/>
@@ -135,14 +138,15 @@
         <property key="code-model-rom" value=""/>
         <property key="create-html-files" value="false"/>
         <property key="data-model-ram" value=""/>
-        <property key="data-model-size-of-double" value="24"/>
-        <property key="data-model-size-of-double-gcc" value="short-double"/>
-        <property key="data-model-size-of-float" value="24"/>
-        <property key="data-model-size-of-float-gcc" value="short-float"/>
+        <property key="data-model-size-of-double" value="32"/>
+        <property key="data-model-size-of-double-gcc" value="no-short-double"/>
+        <property key="data-model-size-of-float" value="32"/>
+        <property key="data-model-size-of-float-gcc" value="no-short-float"/>
         <property key="display-class-usage" value="false"/>
         <property key="display-hex-usage" value="false"/>
         <property key="display-overall-usage" value="true"/>
         <property key="display-psect-usage" value="false"/>
+        <property key="extra-lib-directories" value=""/>
         <property key="fill-flash-options-addr" value=""/>
         <property key="fill-flash-options-const" value=""/>
         <property key="fill-flash-options-how" value="0"/>
@@ -152,6 +156,7 @@
         <property key="fill-flash-options-what" value="0"/>
         <property key="format-hex-file-for-download" value="false"/>
         <property key="initialize-data" value="true"/>
+        <property key="input-libraries" value="libm"/>
         <property key="keep-generated-startup.as" value="false"/>
         <property key="link-in-c-library" value="true"/>
         <property key="link-in-c-library-gcc" value=""/>
@@ -193,7 +198,7 @@
         <property key="programoptions.preservedataflash.ranges"
                   value="${programoptions.preservedataflash.ranges}"/>
         <property key="programoptions.preserveeeprom" value="false"/>
-        <property key="programoptions.preserveeeprom.ranges" value=""/>
+        <property key="programoptions.preserveeeprom.ranges" value="0-ff"/>
         <property key="programoptions.preserveprogram.ranges" value=""/>
         <property key="programoptions.preserveprogramrange" value="false"/>
         <property key="programoptions.preserveuserid" value="false"/>
@@ -228,13 +233,6 @@
         <property key="periphComp6.gte" value="gt"/>
         <property key="reset.scl" value="false"/>
         <property key="reset.type" value="MCLR"/>
-        <property key="tracecontrol.include.timestamp" value="summarydataenabled"/>
-        <property key="tracecontrol.select" value="0"/>
-        <property key="tracecontrol.stallontracebufferfull" value="false"/>
-        <property key="tracecontrol.timestamp" value="0"/>
-        <property key="tracecontrol.tracebufmax" value="546000"/>
-        <property key="tracecontrol.tracefile" value="defmplabxtrace.log"/>
-        <property key="tracecontrol.traceresetonrun" value="false"/>
         <property key="uart0io.output" value="window"/>
         <property key="uart0io.outputfile" value=""/>
         <property key="uart0io.uartioenabled" value="false"/>
@@ -607,14 +605,16 @@
       </Simulator>
       <XC8-config-global>
         <property key="advanced-elf" value="true"/>
-        <property key="gcc-opt-driver-new" value="false"/>
-        <property key="gcc-opt-std" value="--std=c89"/>
+        <property key="gcc-opt-driver-new" value="true"/>
+        <property key="gcc-opt-std" value="-std=c99"/>
         <property key="gcc-output-file-format" value="dwarf-3"/>
+        <property key="omit-pack-options" value="false"/>
         <property key="output-file-format" value="-mcof,+elf"/>
         <property key="stack-size-high" value="auto"/>
         <property key="stack-size-low" value="auto"/>
         <property key="stack-size-main" value="auto"/>
         <property key="stack-type" value="compiled"/>
+        <property key="user-pack-device-support" value=""/>
       </XC8-config-global>
     </conf>
   </confs>

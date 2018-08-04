@@ -1,8 +1,6 @@
 #ifndef SYSTEM_H
 #define	SYSTEM_H
 
-#include <xc.h>
-
 #define _XTAL_FREQ 48000000
 
 // CONFIG1L
@@ -69,5 +67,7 @@
 
 // CONFIG7H
 #pragma config EBTRB = OFF      // Boot Block Table Read Protect (Boot block is not protected from table reads executed in other blocks)
+
+#include <xc.h>
 
 #endif	/* SYSTEM_H */

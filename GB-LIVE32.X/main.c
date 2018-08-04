@@ -60,7 +60,7 @@ union Events {
 
 static volatile union Events events;
 
-void reset()
+void reset(void)
 {
   cfg_D0_7_input();
   cfg_A0_15_input();
@@ -74,7 +74,7 @@ void reset()
   memset(&state, 0, sizeof(struct State));
 }
 
-void check_blocked()
+void check_blocked(void)
 {
   if (!events.sof) {
     return;
@@ -86,7 +86,7 @@ void check_blocked()
   }
 }
 
-void tick_state()
+void tick_state(void)
 {
   if (events.reset) {
     events.reset = 0;
@@ -174,7 +174,7 @@ void tick_state()
   }
 }
 
-void tick_rx()
+void tick_rx(void)
 {
   if (rx_state.remaining > 0) {
     return;
@@ -186,7 +186,7 @@ void tick_rx()
   }
 }
 
-void tick_tx()
+void tick_tx(void)
 {
   if (tx_state.remaining <= 0 || !USBUSARTIsTxTrfReady()) {
     return;
@@ -197,7 +197,7 @@ void tick_tx()
   tx_state.remaining -= chunk_len;
 }
 
-void main()
+void main(void)
 {
   state.tag = STATE_CMD;
   events.byte = 0;
@@ -229,19 +229,19 @@ void main()
   }
 }
 
-void interrupt high_priority isr()
+void __interrupt(high_priority) isr(void)
 {
   USBDeviceTasks();
 }
 
-void suspend()
+void suspend(void)
 {
   ACTCONbits.ACTEN = 0;
   OSCCON2bits.INTSRC = 0;
   OSCCONbits.IRCF = 0b000;
 }
 
-void resume()
+void resume(void)
 {
   OSCCONbits.IRCF = 0b111;
   OSCCON2bits.INTSRC = 1;
@@ -258,22 +258,26 @@ bool USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, uint16_t size
   switch (event) {
     case EVENT_SOF:
       events.sof = true;
-      break;
+      return true;
     case EVENT_CONFIGURED:
       CDCInitEP();
-      break;
-    case EVENT_EP0_REQUEST:
-      USBCheckCDCRequest();
-      break;
+      return true;
     case EVENT_RESET:
       events.reset = true;
-      break;
+      return true;
     case EVENT_SUSPEND:
       suspend();
-      break;
+      return true;
     case EVENT_RESUME:
       resume();
+      return true;
+    default:
       break;
+  }
+  switch ((USB_DEVICE_STACK_EVENTS) event) {
+    case EVENT_EP0_REQUEST:
+      USBCheckCDCRequest();
+      return true;
     default:
       break;
   }

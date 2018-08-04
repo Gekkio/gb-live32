@@ -3,42 +3,42 @@
 
 #include "hardware.h"
 
-inline void low_GB_EN()
+inline void low_GB_EN(void)
 {
   LATCbits.LC0 = 0;
 }
 
-inline void high_GB_EN()
+inline void high_GB_EN(void)
 {
   LATCbits.LC0 = 1;
 }
 
-inline void low_OE()
+inline void low_OE(void)
 {
   LATCbits.LC1 = 0;
 }
 
-inline void high_OE()
+inline void high_OE(void)
 {
   LATCbits.LC1 = 1;
 }
 
-inline void low_WR()
+inline void low_WR(void)
 {
   LATCbits.LC2 = 0;
 }
 
-inline void high_WR()
+inline void high_WR(void)
 {
   LATCbits.LC2 = 1;
 }
 
-inline void low_GB_RES()
+inline void low_GB_RES(void)
 {
   LATEbits.LE2 = 0;
 }
 
-inline void high_GB_RES()
+inline void high_GB_RES(void)
 {
   LATEbits.LE2 = 1;
 }
@@ -58,34 +58,34 @@ inline void write_D0_D7(uint8_t value)
   LATD = value;
 }
 
-inline uint8_t read_D0_D7()
+inline uint8_t read_D0_D7(void)
 {
   return PORTD;
 }
 
-inline void cfg_A0_15_input()
+inline void cfg_A0_15_input(void)
 {
   TRISA = 0xFF;
   TRISB = 0xFF;
 }
 
-inline void cfg_A0_15_output()
+inline void cfg_A0_15_output(void)
 {
   TRISA = 0x00;
   TRISB = 0x00;
 }
 
-inline void cfg_D0_7_input()
+inline void cfg_D0_7_input(void)
 {
   TRISD = 0xFF;
 }
 
-inline void cfg_D0_7_output()
+inline void cfg_D0_7_output(void)
 {
   TRISD = 0x00;
 }
 
-void configure_hardware()
+void configure_hardware(void)
 {
   // All I/O should be digital
   ANSELA = 0x00;

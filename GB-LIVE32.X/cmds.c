@@ -30,7 +30,7 @@ ResponseCode cmd_ping(size_t payload_size)
   return STATUS_OK;
 }
 
-ResponseCode cmd_version()
+ResponseCode cmd_version(void)
 {
   // 2.0
   nelmax_write(&NELMAX, 0x02);
@@ -38,7 +38,7 @@ ResponseCode cmd_version()
   return STATUS_OK;
 }
 
-ResponseCode cmd_status()
+ResponseCode cmd_status(void)
 {
   nelmax_write(&NELMAX, state.unlocked);
   nelmax_write(&NELMAX, state.passthrough);
@@ -125,7 +125,7 @@ ResponseCode cmd_write_block(uint8_t addr_h)
   return STATUS_OK;
 }
 
-ResponseCode cmd_rx_stream()
+ResponseCode cmd_rx_stream(void)
 {
   if (!state.unlocked) {
     return string_error_response("Locked: rx stream not allowed");
@@ -143,7 +143,7 @@ ResponseCode cmd_rx_stream()
   return STATUS_OK;
 }
 
-ResponseCode cmd_tx_stream()
+ResponseCode cmd_tx_stream(void)
 {
   if (!state.unlocked) {
     return string_error_response("Locked: tx stream not allowed");
