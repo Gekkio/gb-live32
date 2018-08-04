@@ -17,14 +17,14 @@ typedef struct __attribute__ ((packed)) _USB_INTERFACE_ASSOCIATION_DESCRIPTOR {
 const USB_DEVICE_DESCRIPTOR device_dsc = {
   sizeof(device_dsc), // bLength
   USB_DESCRIPTOR_DEVICE, // bDescriptorType
-  0x0200, // 0x0200 = USB 2.0, 0x0110 = USB 1.1
-  0xfe, // Device class
-  0x02,
-  0x01,
+  0x0200, // bcdUSB, 0x0200 = USB 2.0
+  0x02, // bDeviceClass
+  0x00, // bDeviceSubClass
+  0x00, // bDeviceProtocol
   USB_EP0_BUFF_SIZE, // bMaxPacketSize0
   0x16C0, // Vendor
   0x05E1, // Product
-  0x0002, // device release (2.0)
+  0x0200, // device release (2.0)
   1, // Manufacturer
   2, // Product
   0, // Serial
