@@ -35,7 +35,7 @@ fn scan_ports() -> Result<Vec<OsString>, Error> {
         if info.vid == 0x16c0
           && info.pid == 0x05e1
           && manufacturer == "gekkio.fi"
-          && product == "GB-LIVE32"
+          && (product == "GB-LIVE32" || product == "GB_LIVE32")
         {
           info!("Detected device: {} ({:04x}:{:04x}, manufacturer=\"{}\", product=\"{}\", serial=\"{}\")",
             name, info.vid, info.pid, manufacturer, product, serial_number);
