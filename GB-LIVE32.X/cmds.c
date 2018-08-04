@@ -32,9 +32,9 @@ ResponseCode cmd_ping(size_t payload_size)
 
 ResponseCode cmd_version(void)
 {
-  // 2.0
+  // 2.1
   nelmax_write(&NELMAX, 0x02);
-  nelmax_write(&NELMAX, 0x00);
+  nelmax_write(&NELMAX, 0x01);
   return STATUS_OK;
 }
 

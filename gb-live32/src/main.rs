@@ -66,8 +66,9 @@ fn worker(port: &OsString, operation: Operation) -> Result<(), Error> {
   let mut gbl32 = Gbl32::from_port(port)?;
 
   let version = gbl32.get_version()?;
-  if version != (2, 0) {
-    bail!("{}: Unsupported version v{}.{}", name, version.0, version.1);
+  match version {
+    (2, 0) | (2, 1) => (),
+    (major, minor) => bail!("{}: Unsupported version v{}.{}", name, major, minor),
   }
   info!("{}: Connected (v{}.{})", name, version.0, version.1);
   unlock_if_necessary(&name, &mut gbl32)?;

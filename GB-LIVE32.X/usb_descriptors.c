@@ -24,7 +24,7 @@ const USB_DEVICE_DESCRIPTOR device_dsc = {
   USB_EP0_BUFF_SIZE, // bMaxPacketSize0
   0x16C0, // Vendor
   0x05E1, // Product
-  0x0200, // device release (2.0)
+  0x0201, // device release (2.1)
   1, // Manufacturer
   2, // Product
   0, // Serial
