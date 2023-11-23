@@ -1,5 +1,4 @@
 use bufstream::BufStream;
-use failure::Fail;
 use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use serialport::SerialPort;
 use std::{
@@ -7,18 +6,18 @@ use std::{
     time::Duration,
 };
 
-#[derive(Fail, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum Gbl32Error {
-    #[fail(display = "Handshake failed")]
+    #[error("Handshake failed")]
     Handshake,
-    #[fail(display = "COBS decode error")]
+    #[error("COBS decode error")]
     Decode,
-    #[fail(display = "Protocol error: {}", _0)]
+    #[error("Protocol error: {_0}")]
     Protocol(String),
-    #[fail(display = "Serial error: {}", _0)]
-    Serial(#[cause] serialport::Error),
-    #[fail(display = "IO error: {}", _0)]
-    Io(#[cause] io::Error),
+    #[error("Serial error: {_0}")]
+    Serial(#[source] serialport::Error),
+    #[error("IO error: {_0}")]
+    Io(#[source] io::Error),
 }
 
 pub struct Gbl32 {

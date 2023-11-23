@@ -1,16 +1,16 @@
+use anyhow::{bail, format_err, Error};
 use clap::{
     app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg, ArgMatches,
 };
-use failure::{bail, format_err, Error};
 use gb_live32::Gbl32;
-use log::info;
+use log::{error, info};
 use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use serialport::SerialPortType;
 use simplelog::{LevelFilter, TermLogger};
 use std::{
     ffi::{OsStr, OsString},
     fs::File,
-    io::{self, Read, Write},
+    io::{self, Read},
     process, thread,
 };
 
@@ -185,9 +185,8 @@ fn run(matches: &ArgMatches) -> Result<(), Error> {
         let result = thread
             .join()
             .map_err(|_| format_err!("{}: failed to wait for worker thread", name))?;
-        if let Err(ref e) = result {
-            let stderr = &mut io::stderr();
-            let _ = writeln!(stderr, "{}: {}\n{}", name, e, e.backtrace());
+        if let Err(ref err) = result {
+            error!("{:#}", err);
             failures += 1;
         }
     }
@@ -223,9 +222,8 @@ fn main() {
         )
         .get_matches();
 
-    if let Err(ref e) = run(&matches) {
-        let stderr = &mut io::stderr();
-        let _ = writeln!(stderr, "Error: {}\n{}", e, e.backtrace());
+    if let Err(ref err) = run(&matches) {
+        error!("{:#}", err);
         process::exit(1);
     }
 }
