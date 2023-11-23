@@ -1,0 +1,138 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches:
+    - main
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    name: Run checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gb-live32
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          rustup default stable
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43
+        with:
+          workspaces: gb-live32
+      - name: Run checks
+        run: |
+          cargo check --all --all-targets --no-default-features
+          cargo check --all --all-targets
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run clippy
+        run: cargo clippy --all
+
+  build_binaries_linux:
+    name: Build binaries (Linux)
+    needs: [check]
+    runs-on: ubuntu-latest
+    env:
+      CROSS_VERSION: 0.2.5
+      CROSS_SHA256: 642375d1bcf3bd88272c32ba90e999f3d983050adf45e66bd2d3887e8e838bad
+    defaults:
+      run:
+        working-directory: gb-live32
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Install cross
+        run: |
+          .github/scripts/install-cross.sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43
+        with:
+          workspaces: gb-live32
+      - name: Compile
+        run: cross build --all --release
+      - name: Persist binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: gb-live32-x86_64-unknown-linux-gnu
+          path: |
+            gb-live32/target/x86_64-unknown-linux-gnu/release/gb-live32
+
+  build_binaries_windows:
+    name: Build binaries (Windows)
+    needs: [check]
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: gb-live32
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43
+        with:
+          workspaces: gb-live32
+      - name: Compile
+        run: cargo build --all --release
+      - name: Persist binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: gb-live32-x86_64-pc-windows-msvc
+          path: |
+            gb-live32/target/release/gb-live32.exe
+
+  build_binaries_mac:
+    name: Build binaries (macOS)
+    needs: [check]
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: gb-live32
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add aarch64-apple-darwin
+          rustup default stable
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43
+        with:
+          workspaces: gb-live32
+      - name: Compile (x86_64)
+        run: cargo build --all --release
+      - name: Compile (aarch64)
+        run: cargo build --all --release --target aarch64-apple-darwin
+      - name: Persist binaries (x86_64)
+        uses: actions/upload-artifact@v3
+        with:
+          name: gb-live32-x86_64-apple-darwin
+          path: |
+            gb-live32/target/release/gb-live32
+      - name: Persist binaries (aarch64)
+        uses: actions/upload-artifact@v3
+        with:
+          name: gb-live32-aarch64-apple-darwin
+          path: |
+            gb-live32/target/aarch64-apple-darwin/release/gb-live32
+
