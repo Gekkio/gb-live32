@@ -14,7 +14,7 @@ use clap::{Arg, ArgMatches};
 use failure::Error;
 use gb_live32::Gbl32;
 use rand::rngs::SmallRng;
-use rand::{FromEntropy, RngCore};
+use rand::{RngCore, SeedableRng};
 use serialport::SerialPortType;
 use simplelog::{LevelFilter, TermLogger};
 use std::ffi::{OsStr, OsString};
@@ -127,7 +127,12 @@ fn unlock_if_necessary(name: &str, gbl32: &mut Gbl32) -> Result<(), Error> {
 }
 
 fn run(matches: &ArgMatches) -> Result<(), Error> {
-  let _ = TermLogger::init(LevelFilter::Debug, simplelog::Config::default());
+  let _ = TermLogger::init(
+    LevelFilter::Debug,
+    simplelog::Config::default(),
+    simplelog::TerminalMode::Mixed,
+    simplelog::ColorChoice::Auto,
+  );
 
   let ports;
   if matches.is_present("broadcast") {

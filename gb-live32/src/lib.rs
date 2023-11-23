@@ -7,7 +7,7 @@ extern crate serialport;
 
 use bufstream::BufStream;
 use rand::rngs::SmallRng;
-use rand::{FromEntropy, RngCore};
+use rand::{RngCore, SeedableRng};
 use serialport::SerialPort;
 use std::io::{self, BufRead, Read, Write};
 use std::time::Duration;
@@ -95,7 +95,8 @@ impl Gbl32 {
       .map_err(Gbl32Error::Io)?;
     self.read_buffer.pop();
 
-    let decoded_len = cobs::decode_in_place(&mut self.read_buffer).map_err(|_| Gbl32Error::Decode)?;
+    let decoded_len =
+      cobs::decode_in_place(&mut self.read_buffer).map_err(|_| Gbl32Error::Decode)?;
     self.read_buffer.truncate(decoded_len);
 
     let response_cmd = self.read_buffer.pop();
