@@ -27,7 +27,7 @@ pub enum Gbl32Error {
 }
 
 pub struct Gbl32 {
-  port: BufStream<Box<SerialPort>>,
+  port: BufStream<Box<dyn SerialPort>>,
   read_buffer: Vec<u8>,
   write_buffer: Box<[u8]>,
 }
@@ -40,7 +40,7 @@ pub struct Status {
 }
 
 impl Gbl32 {
-  pub fn from_port(mut port: Box<SerialPort>) -> Result<Gbl32, Gbl32Error> {
+  pub fn from_port(mut port: Box<dyn SerialPort>) -> Result<Gbl32, Gbl32Error> {
     port
       .set_timeout(Duration::from_millis(200))
       .map_err(Gbl32Error::Serial)?;

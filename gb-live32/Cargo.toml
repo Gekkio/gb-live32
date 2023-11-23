@@ -2,6 +2,7 @@
 name = "gb-live32"
 version = "2.1.0"
 authors = ["Joonas Javanainen <joonas.javanainen@gmail.com>"]
+edition = "2021"
 description = "CLI for the GB-LIVE32 rapid development board"
 license = "MIT/Apache-2.0"
 
