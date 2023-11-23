@@ -1,16 +1,15 @@
 use anyhow::{bail, format_err, Error};
-use clap::{
-    app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg, ArgMatches,
-};
+use clap::Parser as _;
 use gb_live32::Gbl32;
 use log::{error, info};
 use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use serialport::SerialPortType;
 use simplelog::{LevelFilter, TermLogger};
 use std::{
-    ffi::{OsStr, OsString},
+    ffi::OsString,
     fs::File,
     io::{self, Read},
+    path::PathBuf,
     process, thread,
 };
 
@@ -117,7 +116,7 @@ fn unlock_if_necessary(name: &str, gbl32: &mut Gbl32) -> Result<(), Error> {
     Ok(())
 }
 
-fn run(matches: &ArgMatches) -> Result<(), Error> {
+fn run(args: Args) -> Result<(), Error> {
     let _ = TermLogger::init(
         LevelFilter::Debug,
         simplelog::Config::default(),
@@ -126,10 +125,10 @@ fn run(matches: &ArgMatches) -> Result<(), Error> {
     );
 
     let ports;
-    if matches.is_present("broadcast") {
+    if args.broadcast {
         ports = scan_ports()?;
-    } else if let Some(devices) = matches.values_of_os("port") {
-        ports = devices.map(OsStr::to_os_string).collect();
+    } else if let Some(devices) = args.port {
+        ports = vec![devices];
     } else {
         ports = scan_ports()?;
         if ports.len() > 1 {
@@ -151,7 +150,7 @@ fn run(matches: &ArgMatches) -> Result<(), Error> {
         itertools::join(ports.iter().map(|p| p.to_string_lossy()), ", ")
     );
 
-    let operation = if let Some(path) = matches.value_of_os("upload") {
+    let operation = if let Some(path) = args.upload {
         let mut file = File::open(path)?;
         let mut buf = vec![0; 0x8000];
         match file.read_exact(&mut buf) {
@@ -197,32 +196,22 @@ fn run(matches: &ArgMatches) -> Result<(), Error> {
     Ok(())
 }
 
-fn main() {
-    let matches = app_from_crate!()
-        .arg(
-            Arg::with_name("broadcast")
-                .short("b")
-                .long("broadcast")
-                .help("Broadcast mode: use all connected devices"),
-        )
-        .arg(
-            Arg::with_name("port")
-                .short("p")
-                .long("port")
-                .value_name("port")
-                .multiple(true)
-                .help("Serial port to use"),
-        )
-        .arg(
-            Arg::with_name("upload")
-                .short("u")
-                .long("upload")
-                .value_name("upload")
-                .help("ROM file to upload"),
-        )
-        .get_matches();
+#[derive(clap::Parser, Debug)]
+#[command(author, version, about)]
+struct Args {
+    #[arg(short, long, help = "Broadcast mode: use all connected devices")]
+    broadcast: bool,
 
-    if let Err(ref err) = run(&matches) {
+    #[arg(short, long, help = "Serial port to use")]
+    port: Option<OsString>,
+
+    #[arg(short, long, help = "ROM file to upload")]
+    upload: Option<PathBuf>,
+}
+
+fn main() {
+    let args = Args::parse();
+    if let Err(ref err) = run(args) {
         error!("{:#}", err);
         process::exit(1);
     }
