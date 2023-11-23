@@ -64,6 +64,7 @@ jobs:
         run: |
           .github/scripts/install-cross.sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+        working-directory: ${{ github.workspace }}
       - name: Cache dependencies
         uses: Swatinem/rust-cache@a95ba195448af2da9b00fb742d14ffaaf3c21f43
         with:
