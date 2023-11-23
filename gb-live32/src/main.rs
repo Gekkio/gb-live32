@@ -1,27 +1,18 @@
-#[macro_use]
-extern crate clap;
-#[macro_use]
-extern crate failure;
-extern crate gb_live32;
-extern crate itertools;
-#[macro_use]
-extern crate log;
-extern crate rand;
-extern crate serialport;
-extern crate simplelog;
-
-use clap::{Arg, ArgMatches};
-use failure::Error;
+use clap::{
+    app_from_crate, crate_authors, crate_description, crate_name, crate_version, Arg, ArgMatches,
+};
+use failure::{bail, format_err, Error};
 use gb_live32::Gbl32;
-use rand::rngs::SmallRng;
-use rand::{RngCore, SeedableRng};
+use log::info;
+use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use serialport::SerialPortType;
 use simplelog::{LevelFilter, TermLogger};
-use std::ffi::{OsStr, OsString};
-use std::fs::File;
-use std::io::{self, Read, Write};
-use std::process;
-use std::thread;
+use std::{
+    ffi::{OsStr, OsString},
+    fs::File,
+    io::{self, Read, Write},
+    process, thread,
+};
 
 fn scan_ports() -> Result<Vec<OsString>, Error> {
     let ports = serialport::available_ports()?

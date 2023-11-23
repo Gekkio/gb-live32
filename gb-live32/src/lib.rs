@@ -1,16 +1,11 @@
-extern crate bufstream;
-extern crate cobs;
-#[macro_use]
-extern crate failure;
-extern crate rand;
-extern crate serialport;
-
 use bufstream::BufStream;
-use rand::rngs::SmallRng;
-use rand::{RngCore, SeedableRng};
+use failure::Fail;
+use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use serialport::SerialPort;
-use std::io::{self, BufRead, Read, Write};
-use std::time::Duration;
+use std::{
+    io::{self, BufRead, Read, Write},
+    time::Duration,
+};
 
 #[derive(Fail, Debug)]
 pub enum Gbl32Error {
